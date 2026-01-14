@@ -13,7 +13,7 @@ export default function Login() {
     e?.preventDefault(); // ✅ ENTER key submit prevent reload
 
     if (!email || !password) {
-      alert("Email aur Password dono bhare");
+      alert("Please enter Email and Password");
       return;
     }
 
