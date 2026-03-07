@@ -26,7 +26,7 @@ export default function TicketAnalytics({ tickets }: any) {
           dataKey="value"
           outerRadius={120}
         >
-          {data.map((entry, index) => (
+          {data.map((_entry, index) => (
             <Cell key={index} fill={COLORS[index]} />
           ))}
         </Pie>
