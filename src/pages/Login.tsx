@@ -49,6 +49,12 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <form style={styles.card} onSubmit={handleLogin}>
+        {/* LOGO */}
+        <img
+          src="/logo.png"
+          alt="Company Logo"
+          style={styles.logo}
+        />
         <h2 style={styles.heading}>IT Complaint Tracker</h2>
 
         <input
@@ -97,6 +103,13 @@ const styles: Record<string, CSSProperties> = {
     flexDirection: "column",
     gap: "15px",
   },
+
+  logo: {
+    height: "70px",
+    objectFit: "contain",
+    marginBottom: "5px",
+  },
+
   heading: {
     textAlign: "center",
     marginBottom: "10px",
