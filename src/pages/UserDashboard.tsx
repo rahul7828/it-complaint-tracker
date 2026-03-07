@@ -60,7 +60,9 @@ export default function UserDashboard() {
         <button
                  onClick={() => window.location.href="/closed-tickets"}
                  style={{
+                 marginTop:20,
                  marginLeft:15,
+                 marginRight:15,
                  padding:"10px 18px",
                  background:"#4f46e5",
                  //background:"#64748b",
@@ -108,6 +110,7 @@ const styles: any = {
     padding: 30,
   },
   addBtn: {
+    margintop: 20,
     marginBottom: 15,
     padding: "10px 18px",
     background: "#4f46e5",

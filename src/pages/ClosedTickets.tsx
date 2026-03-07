@@ -43,6 +43,7 @@ export default function ClosedTickets() {
       <button
   onClick={() => navigate("/user")}
   style={{
+    marginTop: "20px",
     marginBottom: "15px",
     padding: "10px 16px",
     background: "#2563eb",
