@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+//added by rahul sharma 27/02/2026
+supabase.exe
+*.exe
+node_modules/
+.env
+dist/
+build/
