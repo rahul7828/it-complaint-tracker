@@ -75,7 +75,7 @@ const handleSubmit = async () => {
       priority: priority,
       status: "Open",
       email: [userEmail, hodEmail],
-      //remark: "Ticket Created", // ✅ NEW ADD
+      remark: "New Ticket Created", // ✅ NEW ADD
     });
 
     onSuccess();
