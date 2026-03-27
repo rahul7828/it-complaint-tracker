@@ -1,3 +1,307 @@
+import { useState } from "react";
+import { supabase } from "../supabaseClient";
+import { sendTicketEmail } from "../utils/sendEmail"; // ✅ ADD THIS
+import type { CSSProperties } from "react";
+
+interface Props {
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export default function CreateTicketModal({ onClose, onSuccess }: Props) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [hodEmail, setHodEmail] = useState("");
+  const [priority, setPriority] = useState("Medium");
+  const [files, setFiles] = useState<FileList | null>(null);
+  const [loading, setLoading] = useState(false);
+
+
+
+
+const handleSubmit = async () => {
+  setLoading(true);
+
+  const { data } = await supabase.auth.getSession();
+  const session = data.session;
+
+  if (!session) {
+    alert("User not logged in");
+    setLoading(false);
+    return;
+  }
+
+  /* -------- attachments -------- */
+  let attachments: string[] = [];
+
+  if (files) {
+    for (const file of Array.from(files)) {
+      const path = `${session.user.id}/${Date.now()}_${file.name}`;
+      await supabase.storage.from("tickets").upload(path, file);
+      attachments.push(path);
+    }
+  }
+
+  /* -------- insert ticket -------- */
+  const { data: insertedData, error } = await supabase
+    .from("tickets")
+    .insert({
+      title,
+      description,
+      email: userEmail,
+      hod_email: hodEmail,
+      status: "Open",
+      priority: priority,
+      attachments,
+      created_by: session.user.id,
+      updated_at: new Date().toISOString(),
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    alert(error.message);
+  } else {
+    console.log("INSERTED DATA:", insertedData); // ✅ DEBUG
+
+    /* ✅ EMAIL TRIGGER */
+    await sendTicketEmail({
+      ticket_no: insertedData.ticket_no,  // Use generate ticket no.
+      //ticket_no: `T-${insertedData?.id}`, // ✅ FIXED (SAFE)
+      title: title,
+      description: description,
+      department: "IT",
+      priority: priority,
+      status: "Open",
+      email: [userEmail, hodEmail],
+      //remark: "Ticket Created", // ✅ NEW ADD
+    });
+
+    onSuccess();
+    onClose();
+  }
+
+  setLoading(false);
+};
+
+
+
+
+
+
+
+  // const handleSubmit = async () => {
+  //   setLoading(true);
+
+  //   const { data } = await supabase.auth.getSession();
+  //   const session = data.session;
+
+  //   if (!session) {
+  //     alert("User not logged in");
+  //     setLoading(false);
+  //     return;
+  //   }
+
+  //   /* -------- attachments -------- */
+  //   let attachments: string[] = [];
+
+  //   if (files) {
+  //     for (const file of Array.from(files)) {
+  //       const path = `${session.user.id}/${Date.now()}_${file.name}`;
+  //       await supabase.storage.from("tickets").upload(path, file);
+  //       attachments.push(path);
+  //     }
+  //   }
+
+  //   /* -------- insert ticket -------- */
+  //   const { data: insertedData, error } = await supabase
+  //     .from("tickets")
+  //     .insert({
+  //       title,
+  //       description,
+  //       email: userEmail,
+  //       hod_email: hodEmail,
+  //       status: "Open",
+  //       priority: priority,
+  //       attachments,
+  //       created_by: session.user.id,
+  //       updated_at: new Date().toISOString(),
+  //     })
+  //     .select()
+  //     .single(); // ✅ IMPORTANT
+
+  //   if (error) {
+  //     alert(error.message);
+  //   } else {
+  //     /* ✅ EMAIL TRIGGER */
+  //     await sendTicketEmail({
+  //       ticket_no: `T-${insertedData.id}`,
+  //       //ticket_no: insertedData.id, // ya agar aapke paas custom ticket_no hai to use karo
+  //       title,
+  //       description,
+  //       department: "IT", // optional (change if needed)
+  //       priority,
+  //       status: "Open",
+  //       email: [userEmail, hodEmail], // ✅ MULTIPLE EMAIL
+  //     });
+
+  //     onSuccess();
+  //     onClose();
+  //   }
+
+  //   setLoading(false);
+  // };
+
+  return (
+    <div style={styles.overlay}>
+      <div style={styles.card}>
+        <h2 style={styles.heading}>Create New Ticket</h2>
+
+        <input
+          style={styles.input}
+          placeholder="Your Email"
+          value={userEmail}
+          onChange={(e) => setUserEmail(e.target.value)}
+        />
+
+        <input
+          style={styles.input}
+          placeholder="Ticket Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+
+        <textarea
+          style={{ ...styles.input, height: "90px" }}
+          placeholder="Describe your issue"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+
+        <input
+          style={styles.input}
+          placeholder="HOD Email"
+          value={hodEmail}
+          onChange={(e) => setHodEmail(e.target.value)}
+        />
+
+        <select
+          style={styles.input}
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+        >
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+          <option value="Urgent">Urgent</option>
+        </select>
+
+        <input
+          style={styles.file}
+          type="file"
+          multiple
+          onChange={(e) => setFiles(e.target.files)}
+        />
+
+        <div style={styles.actions}>
+          <button style={styles.cancel} onClick={onClose}>
+            Cancel
+          </button>
+
+          <button
+            style={styles.submit}
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? "Submitting..." : "Submit Ticket"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- STYLES ---------- */
+
+const styles: Record<string, CSSProperties> = {
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.4)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  card: {
+    width: "430px",
+    background: "#fff",
+    borderRadius: "14px",
+    padding: "25px",
+    boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px",
+  },
+  heading: {
+    marginBottom: "10px",
+    color: "#1f2937",
+    textAlign: "center",
+  },
+  input: {
+    padding: "12px",
+    borderRadius: "8px",
+    border: "1px solid #d1d5db",
+    fontSize: "14px",
+  },
+  file: {
+    fontSize: "14px",
+  },
+  actions: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "15px",
+  },
+  cancel: {
+    padding: "10px 16px",
+    borderRadius: "8px",
+    border: "1px solid #d1d5db",
+    background: "#f3f4f6",
+    cursor: "pointer",
+  },
+  submit: {
+    padding: "10px 18px",
+    borderRadius: "8px",
+    border: "none",
+    background: "#4f46e5",
+    color: "#fff",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // import { useState } from "react";
 // import { supabase } from "../supabaseClient";
 // import type { CSSProperties } from "react";
@@ -439,228 +743,483 @@
 
 
 
-import { useState } from "react";
-import { supabase } from "../supabaseClient";
-import type { CSSProperties } from "react";
-
-interface Props {
-  onClose: () => void;
-  onSuccess: () => void;
-}
-
-export default function CreateTicketModal({ onClose, onSuccess }: Props) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [hodEmail, setHodEmail] = useState("");
-  const [priority, setPriority] = useState("Medium"); // ✅ NEW
-  const [files, setFiles] = useState<FileList | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
-    setLoading(true);
-
-    const { data } = await supabase.auth.getSession();
-    const session = data.session;
-
-    if (!session) {
-      alert("User not logged in");
-      setLoading(false);
-      return;
-    }
-
-    /* -------- attachments -------- */
-    let attachments: string[] = [];
-
-    if (files) {
-      for (const file of Array.from(files)) {
-        const path = `${session.user.id}/${Date.now()}_${file.name}`;
-        await supabase.storage.from("tickets").upload(path, file);
-        attachments.push(path);
-      }
-    }
-
-    /* -------- insert ticket -------- */
-    const { error } = await supabase.from("tickets").insert({
-      title,
-      description,
-      email: userEmail,
-      hod_email: hodEmail,
-      status: "Open",
-      priority: priority, // ✅ ADDED
-     // attachments: [],
-      attachments,
-      created_by: session.user.id,
-      updated_at: new Date().toISOString(), // ✅ VERY IMPORTANT FIX
-    });
-
-    // if (error) {
-    //   alert(error.message);
-    // } else {
-    //   onSuccess(); // 🔥 refresh dashboard
-    //   onClose();
-    // }
 
 
 
 
 
-    if (error) {
-  alert(error.message);
-} else {
-
-  // 📧 EMAIL NOTIFICATION (CREATE)
-   fetch(
-    "https://hevvbfybswocqmdxwpxa.supabase.co/functions/v1/resend-email",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: userEmail, // user email
-        cc: hodEmail,
-        subject: "Ticket Created Successfully",
-        html: `
-          <h3>Ticket Created</h3>
-          <p><b>Title:</b> ${title}</p>
-          <p><b>Status:</b> Open</p>
-          <p>Our IT team will contact you.</p>
-        `,
-      }),
-    }
-  );
-
-  onSuccess();
-  onClose();
-}
 
 
-    setLoading(false);
-  };
 
-  return (
-    <div style={styles.overlay}>
-      <div style={styles.card}>
-        <h2 style={styles.heading}>Create New Ticket</h2>
 
-        <input
-          style={styles.input}
-          placeholder="Your Email"
-          value={userEmail}
-          onChange={(e) => setUserEmail(e.target.value)}
-        />
 
-        <input
-          style={styles.input}
-          placeholder="Ticket Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
 
-        <textarea
-          style={{ ...styles.input, height: "90px" }}
-          placeholder="Describe your issue"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
 
-        <input
-          style={styles.input}
-          placeholder="HOD Email"
-          value={hodEmail}
-          onChange={(e) => setHodEmail(e.target.value)}
-        />
-        {/* ✅ PRIORITY DROPDOWN */}
-         <select
-           style={styles.input}
-           value={priority}
-           onChange={(e) => setPriority(e.target.value)}
-         >
-           <option value="High">High</option>
-           <option value="Medium">Medium</option>
-           <option value="Low">Low</option>
-           <option value="Urgent">Urgent</option>
-         </select>
 
-        <input
-          style={styles.file}
-          type="file"
-          multiple
-          onChange={(e) => setFiles(e.target.files)}
-        />
 
-        <div style={styles.actions}>
-          <button style={styles.cancel} onClick={onClose}>
-            Cancel
-          </button>
 
-          <button
-            style={styles.submit}
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? "Submitting..." : "Submit Ticket"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-/* ---------- STYLES (UNCHANGED) ---------- */
 
-const styles: Record<string, CSSProperties> = {
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.4)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  card: {
-    width: "430px",
-    background: "#fff",
-    borderRadius: "14px",
-    padding: "25px",
-    boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
-  },
-  heading: {
-    marginBottom: "10px",
-    color: "#1f2937",
-    textAlign: "center",
-  },
-  input: {
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid #d1d5db",
-    fontSize: "14px",
-  },
-  file: {
-    fontSize: "14px",
-  },
-  actions: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginTop: "15px",
-  },
-  cancel: {
-    padding: "10px 16px",
-    borderRadius: "8px",
-    border: "1px solid #d1d5db",
-    background: "#f3f4f6",
-    cursor: "pointer",
-  },
-  submit: {
-    padding: "10px 18px",
-    borderRadius: "8px",
-    border: "none",
-    background: "#4f46e5",
-    color: "#fff",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-};
+
+
+
+
+
+
+
+
+// // main final working code last time 18/03/26
+// import { useState } from "react";
+// import { supabase } from "../supabaseClient";
+// import type { CSSProperties } from "react";
+
+
+// interface Props {
+//   onClose: () => void;
+//   onSuccess: () => void;
+// }
+
+// export default function CreateTicketModal({ onClose, onSuccess }: Props) {
+//   const [title, setTitle] = useState("");
+//   const [description, setDescription] = useState("");
+//   const [userEmail, setUserEmail] = useState("");
+//   const [hodEmail, setHodEmail] = useState("");
+//   const [priority, setPriority] = useState("Medium"); // ✅ NEW
+//   const [files, setFiles] = useState<FileList | null>(null);
+//   const [loading, setLoading] = useState(false);
+
+//   const handleSubmit = async () => {
+//     setLoading(true);
+
+//     const { data } = await supabase.auth.getSession();
+//     const session = data.session;
+
+//     if (!session) {
+//       alert("User not logged in");
+//       setLoading(false);
+//       return;
+//     }
+
+//     /* -------- attachments -------- */
+//     let attachments: string[] = [];
+
+//     if (files) {
+//       for (const file of Array.from(files)) {
+//         const path = `${session.user.id}/${Date.now()}_${file.name}`;
+//         await supabase.storage.from("tickets").upload(path, file);
+//         attachments.push(path);
+//       }
+//     }
+
+//     /* -------- insert ticket -------- */
+//     const { error } = await supabase.from("tickets").insert({
+//       title,
+//       description,
+//       email: userEmail,
+//       hod_email: hodEmail,
+//       status: "Open",
+//       priority: priority, // ✅ ADDED
+//      // attachments: [],
+//       attachments,
+//       created_by: session.user.id,
+//       updated_at: new Date().toISOString(), // ✅ VERY IMPORTANT FIX
+//     });
+
+//     if (error) {
+//   alert(error.message);
+// } else {
+//   onSuccess();
+//   onClose();
+// }
+
+
+//     setLoading(false);
+//   };
+
+//   return (
+//     <div style={styles.overlay}>
+//       <div style={styles.card}>
+//         <h2 style={styles.heading}>Create New Ticket</h2>
+
+//         <input
+//           style={styles.input}
+//           placeholder="Your Email"
+//           value={userEmail}
+//           onChange={(e) => setUserEmail(e.target.value)}
+//         />
+
+//         <input
+//           style={styles.input}
+//           placeholder="Ticket Title"
+//           value={title}
+//           onChange={(e) => setTitle(e.target.value)}
+//         />
+
+//         <textarea
+//           style={{ ...styles.input, height: "90px" }}
+//           placeholder="Describe your issue"
+//           value={description}
+//           onChange={(e) => setDescription(e.target.value)}
+//         />
+
+//         <input
+//           style={styles.input}
+//           placeholder="HOD Email"
+//           value={hodEmail}
+//           onChange={(e) => setHodEmail(e.target.value)}
+//         />
+//         {/* ✅ PRIORITY DROPDOWN */}
+//          <select
+//            style={styles.input}
+//            value={priority}
+//            onChange={(e) => setPriority(e.target.value)}
+//          >
+//            <option value="High">High</option>
+//            <option value="Medium">Medium</option>
+//            <option value="Low">Low</option>
+//            <option value="Urgent">Urgent</option>
+//          </select>
+
+//         <input
+//           style={styles.file}
+//           type="file"
+//           multiple
+//           onChange={(e) => setFiles(e.target.files)}
+//         />
+
+//         <div style={styles.actions}>
+//           <button style={styles.cancel} onClick={onClose}>
+//             Cancel
+//           </button>
+
+//           <button
+//             style={styles.submit}
+//             onClick={handleSubmit}
+//             disabled={loading}
+//           >
+//             {loading ? "Submitting..." : "Submit Ticket"}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// /* ---------- STYLES (UNCHANGED) ---------- */
+
+// const styles: Record<string, CSSProperties> = {
+//   overlay: {
+//     position: "fixed",
+//     inset: 0,
+//     background: "rgba(0,0,0,0.4)",
+//     display: "flex",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     zIndex: 1000,
+//   },
+//   card: {
+//     width: "430px",
+//     background: "#fff",
+//     borderRadius: "14px",
+//     padding: "25px",
+//     boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+//     display: "flex",
+//     flexDirection: "column",
+//     gap: "14px",
+//   },
+//   heading: {
+//     marginBottom: "10px",
+//     color: "#1f2937",
+//     textAlign: "center",
+//   },
+//   input: {
+//     padding: "12px",
+//     borderRadius: "8px",
+//     border: "1px solid #d1d5db",
+//     fontSize: "14px",
+//   },
+//   file: {
+//     fontSize: "14px",
+//   },
+//   actions: {
+//     display: "flex",
+//     justifyContent: "space-between",
+//     marginTop: "15px",
+//   },
+//   cancel: {
+//     padding: "10px 16px",
+//     borderRadius: "8px",
+//     border: "1px solid #d1d5db",
+//     background: "#f3f4f6",
+//     cursor: "pointer",
+//   },
+//   submit: {
+//     padding: "10px 18px",
+//     borderRadius: "8px",
+//     border: "none",
+//     background: "#4f46e5",
+//     color: "#fff",
+//     fontWeight: "bold",
+//     cursor: "pointer",
+//   },
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// final working code before sendgrid 
+// import { useState } from "react";
+// import { supabase } from "../supabaseClient";
+// import type { CSSProperties } from "react";
+
+// interface Props {
+//   onClose: () => void;
+//   onSuccess: () => void;
+// }
+
+// export default function CreateTicketModal({ onClose, onSuccess }: Props) {
+//   const [title, setTitle] = useState("");
+//   const [description, setDescription] = useState("");
+//   const [userEmail, setUserEmail] = useState("");
+//   const [hodEmail, setHodEmail] = useState("");
+//   const [priority, setPriority] = useState("Medium"); // ✅ NEW
+//   const [files, setFiles] = useState<FileList | null>(null);
+//   const [loading, setLoading] = useState(false);
+
+//   const handleSubmit = async () => {
+//     setLoading(true);
+
+//     const { data } = await supabase.auth.getSession();
+//     const session = data.session;
+
+//     if (!session) {
+//       alert("User not logged in");
+//       setLoading(false);
+//       return;
+//     }
+
+//     /* -------- attachments -------- */
+//     let attachments: string[] = [];
+
+//     if (files) {
+//       for (const file of Array.from(files)) {
+//         const path = `${session.user.id}/${Date.now()}_${file.name}`;
+//         await supabase.storage.from("tickets").upload(path, file);
+//         attachments.push(path);
+//       }
+//     }
+
+//     /* -------- insert ticket -------- */
+//     const { error } = await supabase.from("tickets").insert({
+//       title,
+//       description,
+//       email: userEmail,
+//       hod_email: hodEmail,
+//       status: "Open",
+//       priority: priority, // ✅ ADDED
+//      // attachments: [],
+//       attachments,
+//       created_by: session.user.id,
+//       updated_at: new Date().toISOString(), // ✅ VERY IMPORTANT FIX
+//     });
+
+//     // if (error) {
+//     //   alert(error.message);
+//     // } else {
+//     //   onSuccess(); // 🔥 refresh dashboard
+//     //   onClose();
+//     // }
+
+
+
+
+
+//     if (error) {
+//   alert(error.message);
+// } else {
+
+//   // 📧 EMAIL NOTIFICATION (CREATE)
+//    fetch(
+//     "https://hevvbfybswocqmdxwpxa.supabase.co/functions/v1/resend-email",
+//     {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({
+//         to: userEmail, // user email
+//         cc: hodEmail,
+//         subject: "Ticket Created Successfully",
+//         html: `
+//           <h3>Ticket Created</h3>
+//           <p><b>Title:</b> ${title}</p>
+//           <p><b>Status:</b> Open</p>
+//           <p>Our IT team will contact you.</p>
+//         `,
+//       }),
+//     }
+//   );
+
+//   onSuccess();
+//   onClose();
+// }
+
+
+//     setLoading(false);
+//   };
+
+//   return (
+//     <div style={styles.overlay}>
+//       <div style={styles.card}>
+//         <h2 style={styles.heading}>Create New Ticket</h2>
+
+//         <input
+//           style={styles.input}
+//           placeholder="Your Email"
+//           value={userEmail}
+//           onChange={(e) => setUserEmail(e.target.value)}
+//         />
+
+//         <input
+//           style={styles.input}
+//           placeholder="Ticket Title"
+//           value={title}
+//           onChange={(e) => setTitle(e.target.value)}
+//         />
+
+//         <textarea
+//           style={{ ...styles.input, height: "90px" }}
+//           placeholder="Describe your issue"
+//           value={description}
+//           onChange={(e) => setDescription(e.target.value)}
+//         />
+
+//         <input
+//           style={styles.input}
+//           placeholder="HOD Email"
+//           value={hodEmail}
+//           onChange={(e) => setHodEmail(e.target.value)}
+//         />
+//         {/* ✅ PRIORITY DROPDOWN */}
+//          <select
+//            style={styles.input}
+//            value={priority}
+//            onChange={(e) => setPriority(e.target.value)}
+//          >
+//            <option value="High">High</option>
+//            <option value="Medium">Medium</option>
+//            <option value="Low">Low</option>
+//            <option value="Urgent">Urgent</option>
+//          </select>
+
+//         <input
+//           style={styles.file}
+//           type="file"
+//           multiple
+//           onChange={(e) => setFiles(e.target.files)}
+//         />
+
+//         <div style={styles.actions}>
+//           <button style={styles.cancel} onClick={onClose}>
+//             Cancel
+//           </button>
+
+//           <button
+//             style={styles.submit}
+//             onClick={handleSubmit}
+//             disabled={loading}
+//           >
+//             {loading ? "Submitting..." : "Submit Ticket"}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// /* ---------- STYLES (UNCHANGED) ---------- */
+
+// const styles: Record<string, CSSProperties> = {
+//   overlay: {
+//     position: "fixed",
+//     inset: 0,
+//     background: "rgba(0,0,0,0.4)",
+//     display: "flex",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     zIndex: 1000,
+//   },
+//   card: {
+//     width: "430px",
+//     background: "#fff",
+//     borderRadius: "14px",
+//     padding: "25px",
+//     boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+//     display: "flex",
+//     flexDirection: "column",
+//     gap: "14px",
+//   },
+//   heading: {
+//     marginBottom: "10px",
+//     color: "#1f2937",
+//     textAlign: "center",
+//   },
+//   input: {
+//     padding: "12px",
+//     borderRadius: "8px",
+//     border: "1px solid #d1d5db",
+//     fontSize: "14px",
+//   },
+//   file: {
+//     fontSize: "14px",
+//   },
+//   actions: {
+//     display: "flex",
+//     justifyContent: "space-between",
+//     marginTop: "15px",
+//   },
+//   cancel: {
+//     padding: "10px 16px",
+//     borderRadius: "8px",
+//     border: "1px solid #d1d5db",
+//     background: "#f3f4f6",
+//     cursor: "pointer",
+//   },
+//   submit: {
+//     padding: "10px 18px",
+//     borderRadius: "8px",
+//     border: "none",
+//     background: "#4f46e5",
+//     color: "#fff",
+//     fontWeight: "bold",
+//     cursor: "pointer",
+//   },
+// };

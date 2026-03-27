@@ -166,6 +166,27 @@ export default function TicketList({ tickets, onSelect }: Props) {
 }}>
 Export Excel
 </button>
+{/* closed ticket button on list page */}
+<button
+                 onClick={() => window.location.href="/closed-tickets"}
+                 style={{
+                 marginTop:20,
+                 marginLeft:15,
+                 marginRight:15,
+                 padding:"10px 18px",
+                 background:"#4f46e5",
+                 //background:"#64748b",
+                 color:"#fff",
+                 border:"none",
+                 borderRadius:8,
+                 cursor:"pointer"
+}}
+>
+Closed Tickets
+</button>
+
+
+
       <table style={styles.table}>
         <thead>
           <tr>
@@ -285,6 +306,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderCollapse: "separate",
     borderSpacing: "0 10px",
   },
+
+
   th: {
     padding: "14px",
     background: "#f1f5f9",

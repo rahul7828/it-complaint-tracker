@@ -1,5 +1,5 @@
 import {
-PieChart,
+  PieChart,
   Pie,
   Cell,
   Tooltip,
@@ -25,9 +25,10 @@ export default function TicketAnalytics({ tickets }: Props) {
     Closed: 0
   };
 
+  // ✅ FIXED STATUS MATCH
   tickets.forEach((t) => {
     if (t.status === "Open") statusCount.Open++;
-    if (t.status === "InProgress") statusCount.InProgress++;
+    if (t.status === "In Progress") statusCount.InProgress++;
     if (t.status === "Resolved") statusCount.Resolved++;
     if (t.status === "Closed") statusCount.Closed++;
   });
@@ -44,6 +45,9 @@ export default function TicketAnalytics({ tickets }: Props) {
     { name: "Resolved", value: statusCount.Resolved },
     { name: "Closed", value: statusCount.Closed }
   ];
+
+  // ✅ REMOVE ZERO VALUES (MAIN FIX)
+  const filteredData = data.filter(item => item.value > 0);
 
   const COLORS = ["#ef4444", "#f59e0b", "#10b981", "#6b7280"];
 
@@ -87,30 +91,49 @@ export default function TicketAnalytics({ tickets }: Props) {
 
       <div style={styles.chartContainer}>
 
-        {/* PIE CHART */}
+        {/* PIE / DONUT CHART */}
 
         <div style={styles.chartBox}>
           <h3>Status Distribution</h3>
 
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
+  <PieChart>
 
-              <Pie
-                data={data}
-                dataKey="value"
-                outerRadius={100}
-                label={({ name, value }) => `${name}: ${value}`}
-              >
-                {data.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index]} />
-                ))}
-              </Pie>
+    {/* ✅ CENTER TOTAL */}
+    <text
+      x="50%"
+      y="50%"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      style={{ fontSize: 18, fontWeight: "bold" }}
+    >
+      {totalTickets}
+    </text>
 
-              <Tooltip />
-              <Legend />
+    <Pie
+      data={filteredData}
+      dataKey="value"
+      cx="50%"
+      cy="50%"
+      innerRadius={60}
+      outerRadius={100}
+      paddingAngle={3}
 
-            </PieChart>
-          </ResponsiveContainer>
+      // ✅ FIXED LABEL (no TS error)
+      label={({ percent }) =>
+        percent ? `${(percent * 100).toFixed(0)}%` : ""
+      }
+    >
+      {filteredData.map((_, index) => (
+        <Cell key={index} fill={COLORS[index]} />
+      ))}
+    </Pie>
+
+    <Tooltip />
+    <Legend verticalAlign="bottom" height={36} />
+
+  </PieChart>
+</ResponsiveContainer>
 
         </div>
 
@@ -182,6 +205,504 @@ const styles: any = {
   }
 
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//chart final working code before changes in user dashboard in closed ticket filter
+// import {
+// PieChart,
+//   Pie,
+//   Cell,
+//   Tooltip,
+//   ResponsiveContainer,
+//   Legend,
+//   BarChart,
+//   Bar,
+//   XAxis,
+//   YAxis,
+//   CartesianGrid
+// } from "recharts";
+
+// type Props = {
+//   tickets: any[];
+// };
+
+// export default function TicketAnalytics({ tickets }: Props) {
+
+//   const statusCount = {
+//     Open: 0,
+//     InProgress: 0,
+//     Resolved: 0,
+//     Closed: 0
+//   };
+
+//   tickets.forEach((t) => {
+//     if (t.status === "Open") statusCount.Open++;
+//     if (t.status === "InProgress") statusCount.InProgress++;
+//     if (t.status === "Resolved") statusCount.Resolved++;
+//     if (t.status === "Closed") statusCount.Closed++;
+//   });
+
+//   const totalTickets =
+//     statusCount.Open +
+//     statusCount.InProgress +
+//     statusCount.Resolved +
+//     statusCount.Closed;
+
+//   const data = [
+//     { name: "Open", value: statusCount.Open },
+//     { name: "In Progress", value: statusCount.InProgress },
+//     { name: "Resolved", value: statusCount.Resolved },
+//     { name: "Closed", value: statusCount.Closed }
+//   ];
+
+//   const COLORS = ["#ef4444", "#f59e0b", "#10b981", "#6b7280"];
+
+//   return (
+//     <div style={{ width: "100%", marginTop: 20 }}>
+
+//       <h2 style={{ marginBottom: 20 }}>Ticket Analytics Dashboard</h2>
+
+//       {/* KPI CARDS */}
+
+//       <div style={styles.cardContainer}>
+
+//         <div style={styles.card}>
+//           <h4>Total Tickets</h4>
+//           <p style={styles.number}>{totalTickets}</p>
+//         </div>
+
+//         <div style={{ ...styles.card, borderTop: "4px solid #ef4444" }}>
+//           <h4>Open</h4>
+//           <p style={styles.number}>{statusCount.Open}</p>
+//         </div>
+
+//         <div style={{ ...styles.card, borderTop: "4px solid #f59e0b" }}>
+//           <h4>In Progress</h4>
+//           <p style={styles.number}>{statusCount.InProgress}</p>
+//         </div>
+
+//         <div style={{ ...styles.card, borderTop: "4px solid #10b981" }}>
+//           <h4>Resolved</h4>
+//           <p style={styles.number}>{statusCount.Resolved}</p>
+//         </div>
+
+//         <div style={{ ...styles.card, borderTop: "4px solid #6b7280" }}>
+//           <h4>Closed</h4>
+//           <p style={styles.number}>{statusCount.Closed}</p>
+//         </div>
+
+//       </div>
+
+//       {/* CHARTS */}
+
+//       <div style={styles.chartContainer}>
+
+//         {/* PIE CHART */}
+
+//         <div style={styles.chartBox}>
+//           <h3>Status Distribution</h3>
+
+//           <ResponsiveContainer width="100%" height={300}>
+//             <PieChart>
+
+//               <Pie
+//                 data={data}
+//                 dataKey="value"
+//                 outerRadius={100}
+//                 label={({ name, value }) => `${name}: ${value}`}
+//               >
+//                 {data.map((_, index) => (
+//                   <Cell key={index} fill={COLORS[index]} />
+//                 ))}
+//               </Pie>
+
+//               <Tooltip />
+//               <Legend />
+
+//             </PieChart>
+//           </ResponsiveContainer>
+
+//         </div>
+
+//         {/* BAR CHART */}
+
+//         <div style={styles.chartBox}>
+//           <h3>Status Comparison</h3>
+
+//           <ResponsiveContainer width="100%" height={300}>
+//             <BarChart data={data}>
+
+//               <CartesianGrid strokeDasharray="3 3" />
+
+//               <XAxis dataKey="name" />
+
+//               <YAxis allowDecimals={false} />
+
+//               <Tooltip />
+
+//               <Legend />
+
+//               <Bar dataKey="value" fill="#6366f1" />
+
+//             </BarChart>
+//           </ResponsiveContainer>
+
+//         </div>
+
+//       </div>
+
+//     </div>
+//   );
+// }
+
+// const styles: any = {
+
+//   cardContainer: {
+//     display: "grid",
+//     gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+//     gap: "15px",
+//     marginBottom: "30px"
+//   },
+
+//   card: {
+//     background: "#ffffff",
+//     padding: "20px",
+//     borderRadius: "10px",
+//     boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
+//     textAlign: "center"
+//   },
+
+//   number: {
+//     fontSize: "26px",
+//     fontWeight: "bold",
+//     marginTop: "10px"
+//   },
+
+//   chartContainer: {
+//     display: "grid",
+//     gridTemplateColumns: "1fr 1fr",
+//     gap: "20px"
+//   },
+
+//   chartBox: {
+//     background: "#ffffff",
+//     padding: "20px",
+//     borderRadius: "10px",
+//     boxShadow: "0 5px 15px rgba(0,0,0,0.1)"
+//   }
+
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// chart code with monthly and department analytics
+// import {
+//   PieChart,
+//   Pie,
+//   Cell,
+//   Tooltip,
+//   ResponsiveContainer,
+//   Legend,
+//   BarChart,
+//   Bar,
+//   XAxis,
+//   YAxis,
+//   CartesianGrid,
+//   LineChart,
+//   Line
+// } from "recharts";
+
+// type Props = {
+//   tickets: any[];
+// };
+
+// export default function TicketAnalytics({ tickets }: Props) {
+
+//   const statusCount = {
+//     Open: 0,
+//     InProgress: 0,
+//     Resolved: 0,
+//     Closed: 0
+//   };
+
+//   const monthMap: any = {};
+//   const deptMap: any = {};
+
+//   tickets.forEach((t) => {
+
+//     // STATUS COUNT
+//     if (t.status === "Open") statusCount.Open++;
+//     if (t.status === "InProgress") statusCount.InProgress++;
+//     if (t.status === "Resolved") statusCount.Resolved++;
+//     if (t.status === "Closed") statusCount.Closed++;
+
+//     // MONTHLY TREND
+//     const date = new Date(t.created_at);
+//     const month = date.toLocaleString("default", { month: "short" });
+
+//     if (!monthMap[month]) monthMap[month] = 0;
+//     monthMap[month]++;
+
+//     // DEPARTMENT ANALYTICS
+//     const dept = t.department || "Other";
+
+//     if (!deptMap[dept]) deptMap[dept] = 0;
+//     deptMap[dept]++;
+
+//   });
+
+//   const totalTickets =
+//     statusCount.Open +
+//     statusCount.InProgress +
+//     statusCount.Resolved +
+//     statusCount.Closed;
+
+//   const statusData = [
+//     { name: "Open", value: statusCount.Open },
+//     { name: "In Progress", value: statusCount.InProgress },
+//     { name: "Resolved", value: statusCount.Resolved },
+//     { name: "Closed", value: statusCount.Closed }
+//   ];
+
+//   const monthlyData = Object.keys(monthMap).map((m) => ({
+//     month: m,
+//     tickets: monthMap[m]
+//   }));
+
+//   const deptData = Object.keys(deptMap).map((d) => ({
+//     department: d,
+//     complaints: deptMap[d]
+//   }));
+
+//   const COLORS = ["#ef4444", "#f59e0b", "#10b981", "#6b7280"];
+
+//   return (
+//     <div style={{ width: "100%", marginTop: 20 }}>
+
+//       <h2 style={{ marginBottom: 20 }}>Ticket Analytics Dashboard</h2>
+
+//       {/* KPI CARDS */}
+
+//       <div style={styles.cardContainer}>
+
+//         <div style={styles.card}>
+//           <h4>Total Tickets</h4>
+//           <p style={styles.number}>{totalTickets}</p>
+//         </div>
+
+//         <div style={{ ...styles.card, borderTop: "4px solid #ef4444" }}>
+//           <h4>Open</h4>
+//           <p style={styles.number}>{statusCount.Open}</p>
+//         </div>
+
+//         <div style={{ ...styles.card, borderTop: "4px solid #f59e0b" }}>
+//           <h4>In Progress</h4>
+//           <p style={styles.number}>{statusCount.InProgress}</p>
+//         </div>
+
+//         <div style={{ ...styles.card, borderTop: "4px solid #10b981" }}>
+//           <h4>Resolved</h4>
+//           <p style={styles.number}>{statusCount.Resolved}</p>
+//         </div>
+
+//         <div style={{ ...styles.card, borderTop: "4px solid #6b7280" }}>
+//           <h4>Closed</h4>
+//           <p style={styles.number}>{statusCount.Closed}</p>
+//         </div>
+
+//       </div>
+
+//       {/* STATUS CHARTS */}
+
+//       <div style={styles.chartContainer}>
+
+//         <div style={styles.chartBox}>
+//           <h3>Status Distribution</h3>
+
+//           <ResponsiveContainer width="100%" height={300}>
+//             <PieChart>
+
+//               <Pie
+//                 data={statusData}
+//                 dataKey="value"
+//                 outerRadius={100}
+//                 label={({ name, value }) => `${name}: ${value}`}
+//               >
+//                 {statusData.map((_, index) => (
+//                   <Cell key={index} fill={COLORS[index]} />
+//                 ))}
+//               </Pie>
+
+//               <Tooltip />
+//               <Legend />
+
+//             </PieChart>
+//           </ResponsiveContainer>
+//         </div>
+
+//         <div style={styles.chartBox}>
+//           <h3>Status Comparison</h3>
+
+//           <ResponsiveContainer width="100%" height={300}>
+//             <BarChart data={statusData}>
+
+//               <CartesianGrid strokeDasharray="3 3" />
+//               <XAxis dataKey="name" />
+//               <YAxis allowDecimals={false} />
+//               <Tooltip />
+//               <Legend />
+
+//               <Bar dataKey="value" fill="#6366f1" />
+
+//             </BarChart>
+//           </ResponsiveContainer>
+
+//         </div>
+
+//       </div>
+
+//       {/* MONTHLY TREND */}
+
+//       <div style={{ marginTop: 30 }}>
+//         <div style={styles.chartBox}>
+
+//           <h3>Monthly Ticket Trend</h3>
+
+//           <ResponsiveContainer width="100%" height={300}>
+//             <LineChart data={monthlyData}>
+
+//               <CartesianGrid strokeDasharray="3 3" />
+//               <XAxis dataKey="month" />
+//               <YAxis allowDecimals={false} />
+//               <Tooltip />
+
+//               <Line
+//                 type="monotone"
+//                 dataKey="tickets"
+//                 stroke="#6366f1"
+//                 strokeWidth={3}
+//               />
+
+//             </LineChart>
+//           </ResponsiveContainer>
+
+//         </div>
+//       </div>
+
+//       {/* DEPARTMENT WISE */}
+
+//       <div style={{ marginTop: 30 }}>
+//         <div style={styles.chartBox}>
+
+//           <h3>Department Wise Complaints</h3>
+
+//           <ResponsiveContainer width="100%" height={300}>
+//             <BarChart data={deptData}>
+
+//               <CartesianGrid strokeDasharray="3 3" />
+//               <XAxis dataKey="department" />
+//               <YAxis allowDecimals={false} />
+//               <Tooltip />
+
+//               <Bar dataKey="complaints" fill="#10b981" />
+
+//             </BarChart>
+//           </ResponsiveContainer>
+
+//         </div>
+//       </div>
+
+//     </div>
+//   );
+// }
+
+// const styles: any = {
+
+//   cardContainer: {
+//     display: "grid",
+//     gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+//     gap: "15px",
+//     marginBottom: "30px"
+//   },
+
+//   card: {
+//     background: "#ffffff",
+//     padding: "20px",
+//     borderRadius: "10px",
+//     boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
+//     textAlign: "center"
+//   },
+
+//   number: {
+//     fontSize: "26px",
+//     fontWeight: "bold",
+//     marginTop: "10px"
+//   },
+
+//   chartContainer: {
+//     display: "grid",
+//     gridTemplateColumns: "1fr 1fr",
+//     gap: "20px"
+//   },
+
+//   chartBox: {
+//     background: "#ffffff",
+//     padding: "20px",
+//     borderRadius: "10px",
+//     boxShadow: "0 5px 15px rgba(0,0,0,0.1)"
+//   }
+
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
