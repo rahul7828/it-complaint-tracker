@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { sendTicketEmail } from "../utils/sendEmail"; // ✅ ADD THIS
 
+
 type Props = {
   ticket: any;
   onClose: () => void;
@@ -96,7 +97,10 @@ export default function TicketDetails({
     department: "IT",
     priority: ticket.priority,
     status: status,
-    email: [ticket.email, ticket.hod_email],
+    user_email: ticket.email,
+    hod_email: ticket.hod_email,
+    is_admin: isAdmin,
+    // email: [ticket.email, ticket.hod_email],
     remark: insertedUpdate?.message || "Updated",
   });
 
