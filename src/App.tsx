@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ClosedTickets from "./pages/ClosedTickets";  
+import UserManagement from "./pages/UserManagement";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<Navigate to="/" />} />
         <Route path="/closed-tickets" element={<ClosedTickets />} />
+        <Route path="/users" element={<UserManagement />} />
       </Routes>
     </BrowserRouter>
   );

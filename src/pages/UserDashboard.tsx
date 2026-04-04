@@ -11,6 +11,8 @@ export default function UserDashboard() {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [showCreate, setShowCreate] = useState(false);
 
+  const [userId, setUserId] = useState<string | null>(null); // 🔥 NEW
+
   // ✅ Filters
   const [showOpen, setShowOpen] = useState(true);
   const [showInProgress, setShowInProgress] = useState(true);
@@ -18,19 +20,22 @@ export default function UserDashboard() {
 
   const [search, setSearch] = useState("");
 
+  /* 🔥 GET USER + FETCH TICKETS */
   const fetchTickets = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data } = await supabase.auth.getUser();
+    const user = data.user;
 
-    if (!session) return;
+    if (!user) return;
 
-    const { data, error } = await supabase
+    setUserId(user.id); // 🔥 store userId
+
+    const { data: ticketData, error } = await supabase
       .from("tickets")
       .select(`*,ticket_updates (message, created_at)`)
+      .eq("created_by", user.id) // 🔥 IMPORTANT FILTER
       .order("created_at", { ascending: false });
 
-    if (!error) setTickets(data || []);
+    if (!error) setTickets(ticketData || []);
   };
 
   useEffect(() => {
@@ -40,7 +45,12 @@ export default function UserDashboard() {
       .channel("tickets-realtime")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "tickets" },
+        {
+          event: "*",
+          schema: "public",
+          table: "tickets",
+          filter: `created_by=eq.${userId}`, // 🔥 REALTIME FILTER
+        },
         () => {
           fetchTickets();
         }
@@ -50,7 +60,7 @@ export default function UserDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [userId]); // 🔥 IMPORTANT
 
   // ✅ Clear Closed (hide only)
   const clearClosedTickets = () => {
@@ -200,6 +210,231 @@ const styles: any = {
     cursor: "pointer",
   },
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// final working code before user wise tickets show 04/04/26
+// import { useEffect, useState } from "react";
+// import { supabase } from "../supabaseClient";
+// import Header from "../components/Header";
+// import TicketList from "../components/TicketList";
+// import TicketDetails from "../components/TicketDetails";
+// import CreateTicketModal from "../components/CreateTicketModal";
+// import TicketAnalytics from "../components/TicketAnalytics";
+
+// export default function UserDashboard() {
+//   const [tickets, setTickets] = useState<any[]>([]);
+//   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+//   const [showCreate, setShowCreate] = useState(false);
+
+//   // ✅ Filters
+//   const [showOpen, setShowOpen] = useState(true);
+//   const [showInProgress, setShowInProgress] = useState(true);
+//   const [showClosed, setShowClosed] = useState(true);
+
+//   const [search, setSearch] = useState("");
+
+//   const fetchTickets = async () => {
+//     const {
+//       data: { session },
+//     } = await supabase.auth.getSession();
+
+//     if (!session) return;
+
+//     const { data, error } = await supabase
+//       .from("tickets")
+//       .select(`*,ticket_updates (message, created_at)`)
+//       .order("created_at", { ascending: false });
+
+//     if (!error) setTickets(data || []);
+//   };
+
+//   useEffect(() => {
+//     fetchTickets();
+
+//     const channel = supabase
+//       .channel("tickets-realtime")
+//       .on(
+//         "postgres_changes",
+//         { event: "*", schema: "public", table: "tickets" },
+//         () => {
+//           fetchTickets();
+//         }
+//       )
+//       .subscribe();
+
+//     return () => {
+//       supabase.removeChannel(channel);
+//     };
+//   }, []);
+
+//   // ✅ Clear Closed (hide only)
+//   const clearClosedTickets = () => {
+//     setShowClosed(false);
+//   };
+
+//   // ✅ Filter logic
+//   const filteredTickets = tickets.filter((t) => {
+//     const statusMatch =
+//       (showOpen && t.status === "Open") ||
+//       (showInProgress && t.status === "In Progress") ||
+//       (showClosed && t.status === "Closed");
+
+//     const searchMatch =
+//       t.title?.toLowerCase().includes(search.toLowerCase()) ||
+//       t.description?.toLowerCase().includes(search.toLowerCase());
+
+//     return statusMatch && searchMatch;
+//   });
+
+//   return (
+//     <div style={styles.page}>
+//       <Header title="User Dashboard" />
+
+//       <div style={styles.container}>
+//         <TicketAnalytics tickets={filteredTickets} />
+
+//         {/* ✅ FILTER BAR */}
+//         <div style={styles.filterBar}>
+//           <label>
+//             <input
+//               type="checkbox"
+//               checked={showOpen}
+//               onChange={() => setShowOpen(!showOpen)}
+//             />
+//             Open
+//           </label>
+
+//           <label>
+//             <input
+//               type="checkbox"
+//               checked={showInProgress}
+//               onChange={() => setShowInProgress(!showInProgress)}
+//             />
+//             In Progress
+//           </label>
+
+//           <label>
+//             <input
+//               type="checkbox"
+//               checked={showClosed}
+//               onChange={() => setShowClosed(!showClosed)}
+//             />
+//             Closed
+//           </label>
+
+//           {/* 🔍 Search */}
+//           <input
+//             type="text"
+//             placeholder="Search tickets..."
+//             value={search}
+//             onChange={(e) => setSearch(e.target.value)}
+//             style={styles.search}
+//           />
+//         </div>
+
+//         {/* Buttons */}
+//         <div style={{ marginTop: 10 }}>
+//           <button
+//             onClick={() => (window.location.href = "/closed-tickets")}
+//             style={styles.btn}
+//           >
+//             View Closed Tickets
+//           </button>
+
+//           <button
+//             onClick={clearClosedTickets}
+//             style={{ ...styles.btn, background: "#dc2626" }}
+//           >
+//             Clear Closed Tickets
+//           </button>
+//         </div>
+
+//         <button style={styles.addBtn} onClick={() => setShowCreate(true)}>
+//           + Add New Ticket
+//         </button>
+
+//         <TicketList tickets={filteredTickets} onSelect={setSelectedTicket} />
+
+//         {selectedTicket && (
+//           <TicketDetails
+//             ticket={selectedTicket}
+//             isAdmin={false}
+//             onClose={() => setSelectedTicket(null)}
+//             onUpdated={fetchTickets}
+//           />
+//         )}
+
+//         {showCreate && (
+//           <CreateTicketModal
+//             onClose={() => setShowCreate(false)}
+//             onSuccess={fetchTickets}
+//           />
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
+// const styles: any = {
+//   page: {
+//     minHeight: "100vh",
+//     background: "#f1f5f9",
+//   },
+//   container: {
+//     padding: 30,
+//   },
+//   filterBar: {
+//     display: "flex",
+//     gap: 20,
+//     alignItems: "center",
+//     marginBottom: 15,
+//     flexWrap: "wrap",
+//   },
+//   search: {
+//     padding: "8px 12px",
+//     borderRadius: 6,
+//     border: "1px solid #ccc",
+//   },
+//   addBtn: {
+//     marginTop: 10,
+//     marginBottom: 15,
+//     padding: "10px 18px",
+//     background: "#4f46e5",
+//     color: "#fff",
+//     border: "none",
+//     borderRadius: 8,
+//     cursor: "pointer",
+//   },
+//   btn: {
+//     marginRight: 10,
+//     padding: "10px 18px",
+//     background: "#4f46e5",
+//     color: "#fff",
+//     border: "none",
+//     borderRadius: 8,
+//     cursor: "pointer",
+//   },
+// };
 
 
 
