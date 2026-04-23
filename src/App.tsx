@@ -4,6 +4,8 @@ import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ClosedTickets from "./pages/ClosedTickets";  
 import UserManagement from "./pages/UserManagement";
+import ResetPassword from "./pages/ResetPassword";
+import ChangePassword from "./pages/ChangePassword";
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" />} />
         <Route path="/closed-tickets" element={<ClosedTickets />} />
         <Route path="/users" element={<UserManagement />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   );
