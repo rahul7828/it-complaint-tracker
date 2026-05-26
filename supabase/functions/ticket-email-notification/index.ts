@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
           <b>Attachments:</b><br/><br/>
 
           ${attachments
-            .map((url: string, i: number) => {
+            .map((url: string) => {
               const fileName = url.split("/").pop();
 
               return `
@@ -113,25 +113,42 @@ Deno.serve(async (req) => {
 
           const response = await fetch(fullUrl);
 
+          // FILE DOWNLOAD FAILED
+          if (!response.ok) {
+            console.log(
+              "FILE DOWNLOAD FAILED:",
+              fullUrl
+            );
+            continue;
+          }
+
           const blob = await response.blob();
 
-          const arrayBuffer = await blob.arrayBuffer();
+          const arrayBuffer =
+            await blob.arrayBuffer();
 
           const base64File = encodeBase64(
             new Uint8Array(arrayBuffer)
           );
 
           const fileName =
-            fileUrl.split("/").pop() || "attachment";
+            fileUrl.split("/").pop() ||
+            "attachment";
 
           emailAttachments.push({
             name: fileName,
             content: base64File,
           });
 
-          console.log("ATTACHED FILE:", fileName);
+          console.log(
+            "ATTACHED FILE:",
+            fileName
+          );
         } catch (err) {
-          console.error("Attachment Error:", err);
+          console.error(
+            "Attachment Error:",
+            err
+          );
         }
       }
     }
@@ -149,8 +166,6 @@ Deno.serve(async (req) => {
       })),
 
       subject: `Ticket Update - ${ticket_no}`,
-
-      attachment: emailAttachments,
 
       htmlContent: `
         <div
@@ -229,18 +244,28 @@ Deno.serve(async (req) => {
       `,
     };
 
+    // ONLY SEND ATTACHMENT IF EXISTS
+    if (emailAttachments.length > 0) {
+      emailData.attachment =
+        emailAttachments;
+    }
+
     /* ---------------- OPTIONAL CC/BCC ---------------- */
 
     if (ccEmails.length > 0) {
-      emailData.cc = ccEmails.map((email: string) => ({
-        email,
-      }));
+      emailData.cc = ccEmails.map(
+        (email: string) => ({
+          email,
+        })
+      );
     }
 
     if (bccEmails.length > 0) {
-      emailData.bcc = bccEmails.map((email: string) => ({
-        email,
-      }));
+      emailData.bcc = bccEmails.map(
+        (email: string) => ({
+          email,
+        })
+      );
     }
 
     /* ---------------- BREVO API ---------------- */
@@ -252,8 +277,12 @@ Deno.serve(async (req) => {
 
         headers: {
           accept: "application/json",
-          "api-key": Deno.env.get("BREVO_API_KEY")!,
-          "content-type": "application/json",
+          "api-key":
+            Deno.env.get(
+              "BREVO_API_KEY"
+            )!,
+          "content-type":
+            "application/json",
         },
 
         body: JSON.stringify(emailData),
@@ -262,7 +291,10 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
-    console.log("BREVO RESPONSE:", data);
+    console.log(
+      "BREVO RESPONSE:",
+      data
+    );
 
     if (!response.ok) {
       return new Response(
@@ -274,7 +306,8 @@ Deno.serve(async (req) => {
           status: response.status,
           headers: {
             ...corsHeaders,
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
         }
       );
@@ -289,7 +322,8 @@ Deno.serve(async (req) => {
         status: 200,
         headers: {
           ...corsHeaders,
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
         },
       }
     );
@@ -304,12 +338,357 @@ Deno.serve(async (req) => {
         status: 500,
         headers: {
           ...corsHeaders,
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
         },
       }
     );
   }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+// import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+
+// const corsHeaders = {
+//   "Access-Control-Allow-Origin": "*",
+//   "Access-Control-Allow-Headers":
+//     "authorization, x-client-info, apikey, content-type",
+// };
+
+// Deno.serve(async (req) => {
+//   if (req.method === "OPTIONS") {
+//     return new Response("ok", {
+//       headers: corsHeaders,
+//     });
+//   }
+
+//   try {
+//     const payload = await req.json();
+
+//     const {
+//       ticket_no,
+//       title,
+//       description,
+//       priority,
+//       status,
+//       to = [],
+//       cc = [],
+//       bcc = [],
+//       user_email,
+//       hod_email,
+//       remark,
+//       attachments = [],
+//     } = payload;
+
+//     /* ---------------- EMAIL NORMALIZE ---------------- */
+
+//     const normalizeEmails = (val: any) => {
+//       if (!val) return [];
+
+//       if (Array.isArray(val)) return val;
+
+//       return String(val)
+//         .split(",")
+//         .map((e) => e.trim())
+//         .filter((e) => e);
+//     };
+
+//     let toEmails = normalizeEmails(to);
+//     let ccEmails = normalizeEmails(cc);
+//     let bccEmails = normalizeEmails(bcc);
+
+//     // fallback
+//     if (toEmails.length === 0 && user_email) {
+//       toEmails = normalizeEmails(user_email);
+//     }
+
+//     if (ccEmails.length === 0 && hod_email) {
+//       ccEmails = normalizeEmails(hod_email);
+//     }
+
+//     // ALWAYS SEND TO IT
+//     if (!toEmails.includes("it@eagleseeds.com")) {
+//       toEmails.push("it@eagleseeds.com");
+//     }
+
+//     console.log("FINAL TO:", toEmails);
+//     console.log("FINAL CC:", ccEmails);
+
+//     /* ---------------- STATUS COLOR ---------------- */
+
+//     const getStatusColor = (status: string) => {
+//       const s = status?.toLowerCase();
+
+//       if (s === "open") return "#ef4444";
+//       if (s === "in progress") return "#f59e0b";
+//       if (s === "resolved") return "#10b981";
+//       if (s === "closed") return "#64748b";
+
+//       return "#2563eb";
+//     };
+
+//     const statusColor = getStatusColor(status);
+
+//     /* ---------------- ATTACHMENT HTML + REAL FILE ATTACHMENT ---------------- */
+
+//     let attachmentHtml = "";
+//     let emailAttachments: any[] = [];
+
+//     if (attachments.length > 0) {
+//       attachmentHtml = `
+//         <p>
+//           <b>Attachments:</b><br/><br/>
+
+//           ${attachments
+//             .map((url: string, i: number) => {
+//               const fileName = url.split("/").pop();
+
+//               return `
+//                 📎 ${fileName}<br/>
+//               `;
+//             })
+//             .join("")}
+//         </p>
+//       `;
+
+//       // DOWNLOAD FILES & ATTACH IN EMAIL
+//       for (const fileUrl of attachments) {
+//         try {
+//           const fullUrl = fileUrl.startsWith("http")
+//             ? fileUrl
+//             : `https://hevvbfybswocqmdxwpxa.supabase.co/storage/v1/object/public/tickets/${fileUrl}`;
+
+//           const response = await fetch(fullUrl);
+
+//           const blob = await response.blob();
+
+//           const arrayBuffer = await blob.arrayBuffer();
+
+//           const base64File = encodeBase64(
+//             new Uint8Array(arrayBuffer)
+//           );
+
+//           const fileName =
+//             fileUrl.split("/").pop() || "attachment";
+
+//           emailAttachments.push({
+//             name: fileName,
+//             content: base64File,
+//           });
+
+//           console.log("ATTACHED FILE:", fileName);
+//         } catch (err) {
+//           console.error("Attachment Error:", err);
+//         }
+//       }
+//     }
+
+//     /* ---------------- EMAIL TEMPLATE ---------------- */
+
+//     const emailData: any = {
+//       sender: {
+//         name: "Eagle Seeds IT Helpdesk",
+//         email: "rahul.sharma@eagleseeds.com",
+//       },
+
+//       to: toEmails.map((email: string) => ({
+//         email,
+//       })),
+
+//       subject: `Ticket Update - ${ticket_no}`,
+
+//       attachment: emailAttachments,
+
+//       htmlContent: `
+//         <div
+//           style="
+//             font-family: Arial, sans-serif;
+//             font-size:14px;
+//             line-height:1.7;
+//             color:#111827;
+//           "
+//         >
+
+//           <h2
+//             style="
+//               margin-bottom:18px;
+//               color:#0f172a;
+//             "
+//           >
+//             IT Ticket Notification
+//           </h2>
+
+//           <p>
+//             <b>Status:</b>
+//             <span
+//               style="
+//                 color:${statusColor};
+//                 font-weight:bold;
+//               "
+//             >
+//               ${status}
+//             </span>
+//           </p>
+
+//           <br/>
+
+//           <p>
+//             <b>Ticket Number:</b><br/>
+//             ${ticket_no}
+//           </p>
+
+//           <p>
+//             <b>Title:</b><br/>
+//             ${title}
+//           </p>
+
+//           <p>
+//             <b>Description:</b><br/>
+//             ${description}
+//           </p>
+
+//           <p>
+//             <b>Priority:</b><br/>
+//             ${priority || "-"}
+//           </p>
+
+//           ${
+//             remark
+//               ? `
+//             <p>
+//               <b>Latest Remark:</b><br/>
+//               ${remark}
+//             </p>
+//           `
+//               : ""
+//           }
+
+//           ${attachmentHtml}
+
+//           <br/>
+
+//           <p>
+//             Regards,<br/>
+//             <b>Eagle Seeds IT Team</b>
+//           </p>
+
+//         </div>
+//       `,
+//     };
+
+//     /* ---------------- OPTIONAL CC/BCC ---------------- */
+
+//     if (ccEmails.length > 0) {
+//       emailData.cc = ccEmails.map((email: string) => ({
+//         email,
+//       }));
+//     }
+
+//     if (bccEmails.length > 0) {
+//       emailData.bcc = bccEmails.map((email: string) => ({
+//         email,
+//       }));
+//     }
+
+//     /* ---------------- BREVO API ---------------- */
+
+//     const response = await fetch(
+//       "https://api.brevo.com/v3/smtp/email",
+//       {
+//         method: "POST",
+
+//         headers: {
+//           accept: "application/json",
+//           "api-key": Deno.env.get("BREVO_API_KEY")!,
+//           "content-type": "application/json",
+//         },
+
+//         body: JSON.stringify(emailData),
+//       }
+//     );
+
+//     const data = await response.json();
+
+//     console.log("BREVO RESPONSE:", data);
+
+//     if (!response.ok) {
+//       return new Response(
+//         JSON.stringify({
+//           success: false,
+//           error: data,
+//         }),
+//         {
+//           status: response.status,
+//           headers: {
+//             ...corsHeaders,
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+//     }
+
+//     return new Response(
+//       JSON.stringify({
+//         success: true,
+//         data,
+//       }),
+//       {
+//         status: 200,
+//         headers: {
+//           ...corsHeaders,
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+//   } catch (err: any) {
+//     console.error("ERROR:", err);
+
+//     return new Response(
+//       JSON.stringify({
+//         error: err.message,
+//       }),
+//       {
+//         status: 500,
+//         headers: {
+//           ...corsHeaders,
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+//   }
+// });
 
 
 
