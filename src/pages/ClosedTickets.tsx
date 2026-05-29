@@ -41,7 +41,29 @@ export default function ClosedTickets() {
 
       <Header title="Closed Tickets Archive" />
       <button
-  onClick={() => navigate("/user")}
+  onClick={async () => {
+
+    const { data } =
+      await supabase.auth.getUser();
+
+    const user = data.user;
+
+    if (!user) return;
+
+    const { data: profile } =
+      await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+    if (profile?.role === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/user");
+    }
+  }}
+
   style={{
     marginTop: "20px",
     marginBottom: "15px",
@@ -53,7 +75,7 @@ export default function ClosedTickets() {
     cursor: "pointer"
   }}
 >
-🏠 Home
+  🏠 Home
 </button>
 
       {loading ? (
@@ -65,6 +87,96 @@ export default function ClosedTickets() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import { useEffect, useState } from "react";
+// import { supabase } from "../supabaseClient";
+// import Header from "../components/Header";
+// import TicketList from "../components/TicketList";
+// import { useNavigate } from "react-router-dom";
+
+// export default function ClosedTickets() {
+
+//   const [tickets, setTickets] = useState<any[]>([]);
+//   const [loading, setLoading] = useState(true);
+
+//   const fetchClosedTickets = async () => {
+
+//     const { data, error } = await supabase
+//       .from("tickets")
+//       .select(`
+//         *,
+//         ticket_updates (
+//           message,
+//           created_at
+//         )
+//       `)
+//       .eq("status", "Closed")
+//       .order("created_at", { ascending: false });
+
+//     if (!error) {
+//       setTickets(data || []);
+//     }
+
+//     setLoading(false);
+//   };
+
+//   useEffect(() => {
+//     fetchClosedTickets();
+//   }, []);
+
+//   const navigate = useNavigate();
+
+//   return (
+//     <div style={{ padding: 30 }}>
+
+//       <Header title="Closed Tickets Archive" />
+//       <button
+//   onClick={() => navigate("/user")}
+//   style={{
+//     marginTop: "20px",
+//     marginBottom: "15px",
+//     padding: "10px 16px",
+//     background: "#2563eb",
+//     color: "#fff",
+//     border: "none",
+//     borderRadius: "8px",
+//     cursor: "pointer"
+//   }}
+// >
+// 🏠 Home
+// </button>
+
+//       {loading ? (
+//         <p>Loading...</p>
+//       ) : (
+//         <TicketList tickets={tickets} />
+//       )}
+
+//     </div>
+//   );
+// }
 
 
 
