@@ -39,24 +39,54 @@ export default function TicketList({
     remark: "",
   });
 
-  const getStatusColor = (status: string) => {
-    const s = status?.toLowerCase().replace("_", " ").trim();
+  // EXPAND STATES
+  const [
+    expandedDescriptions,
+    setExpandedDescriptions,
+  ] = useState<Record<string, boolean>>(
+    {}
+  );
 
-    if (s === "open") return "#ef4444";
-    if (s === "in progress") return "#f59e0b";
-    if (s === "resolved") return "#10b981";
-    if (s === "closed") return "#64748b";
+  const [
+    expandedEmails,
+    setExpandedEmails,
+  ] = useState<Record<string, boolean>>(
+    {}
+  );
+
+  const getStatusColor = (
+    status: string
+  ) => {
+    const s = status
+      ?.toLowerCase()
+      .replace("_", " ")
+      .trim();
+
+    if (s === "open")
+      return "#ef4444";
+
+    if (s === "in progress")
+      return "#f59e0b";
+
+    if (s === "resolved")
+      return "#10b981";
+
+    if (s === "closed")
+      return "#64748b";
 
     return "#64748b";
   };
 
-  const downloadAttachment = (fileUrl: string) => {
+  const downloadAttachment = (
+    fileUrl: string
+  ) => {
     if (!fileUrl) return;
 
     if (fileUrl.startsWith("http")) {
       window.open(fileUrl, "_blank");
     } else {
       const fullUrl = `https://hevvbfybswocqmdxwpxa.supabase.co/storage/v1/object/public/tickets/${fileUrl}`;
+
       window.open(fullUrl, "_blank");
     }
   };
@@ -64,58 +94,116 @@ export default function TicketList({
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
       const lastRemark =
-        t.ticket_updates && t.ticket_updates.length > 0
-          ? t.ticket_updates[t.ticket_updates.length - 1].message
+        t.ticket_updates &&
+        t.ticket_updates.length > 0
+          ? t.ticket_updates[
+              t.ticket_updates.length -
+                1
+            ].message
           : "";
 
       return (
         (t.ticket_no || "")
           .toLowerCase()
-          .includes(filters.ticket_no.toLowerCase()) &&
+          .includes(
+            filters.ticket_no.toLowerCase()
+          ) &&
         (t.title || "")
           .toLowerCase()
-          .includes(filters.title.toLowerCase()) &&
+          .includes(
+            filters.title.toLowerCase()
+          ) &&
         (t.description || "")
           .toLowerCase()
-          .includes(filters.description.toLowerCase()) &&
+          .includes(
+            filters.description.toLowerCase()
+          ) &&
         (t.status || "")
           .toLowerCase()
-          .includes(filters.status.toLowerCase()) &&
+          .includes(
+            filters.status.toLowerCase()
+          ) &&
         (t.priority || "")
           .toLowerCase()
-          .includes(filters.priority.toLowerCase()) &&
-        (t.created_at
-          ? new Date(t.created_at)
-              .toLocaleString()
-              .toLowerCase()
-          : ""
-        ).includes(filters.created_at.toLowerCase()) &&
+          .includes(
+            filters.priority.toLowerCase()
+          ) &&
+        (
+          t.created_at
+            ? new Date(
+                t.created_at
+              ).toLocaleString()
+            : ""
+        ).includes(
+          filters.created_at.toLowerCase()
+        ) &&
         (t.email || "")
           .toLowerCase()
-          .includes(filters.email.toLowerCase()) &&
+          .includes(
+            filters.email.toLowerCase()
+          ) &&
         (t.hod_email || "")
           .toLowerCase()
-          .includes(filters.hod_email.toLowerCase()) &&
+          .includes(
+            filters.hod_email.toLowerCase()
+          ) &&
         (lastRemark || "")
           .toLowerCase()
-          .includes(filters.remark.toLowerCase())
+          .includes(
+            filters.remark.toLowerCase()
+          )
       );
     });
   }, [tickets, filters]);
 
   const exportToExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Tickets");
+    const workbook =
+      new ExcelJS.Workbook();
+
+    const worksheet =
+      workbook.addWorksheet("Tickets");
 
     worksheet.columns = [
-      { header: "Ticket No", key: "ticket_no", width: 15 },
-      { header: "Title", key: "title", width: 28 },
-      { header: "Description", key: "description", width: 40 },
-      { header: "Priority", key: "priority", width: 15 },
-      { header: "Status", key: "status", width: 15 },
-      { header: "User Email", key: "email", width: 30 },
-      { header: "HOD Email", key: "hod_email", width: 30 },
-      { header: "Created Date", key: "created_at", width: 22 },
+      {
+        header: "Ticket No",
+        key: "ticket_no",
+        width: 15,
+      },
+      {
+        header: "Title",
+        key: "title",
+        width: 28,
+      },
+      {
+        header: "Description",
+        key: "description",
+        width: 50,
+      },
+      {
+        header: "Priority",
+        key: "priority",
+        width: 15,
+      },
+      {
+        header: "Status",
+        key: "status",
+        width: 15,
+      },
+      {
+        header: "User Email",
+        key: "email",
+        width: 30,
+      },
+      {
+        header: "HOD Email",
+        key: "hod_email",
+        width: 30,
+      },
+      {
+        header: "Created Date",
+        key: "created_at",
+        width: 22,
+      },
     ];
 
     filteredTickets.forEach((t) => {
@@ -133,15 +221,21 @@ export default function TicketList({
       });
     });
 
-    const buffer = await workbook.xlsx.writeBuffer();
+    const buffer =
+      await workbook.xlsx.writeBuffer();
 
     const blob = new Blob([buffer]);
 
-    const url = window.URL.createObjectURL(blob);
+    const url =
+      window.URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
+    const a =
+      document.createElement("a");
+
     a.href = url;
+
     a.download = "tickets.xlsx";
+
     a.click();
   };
 
@@ -163,53 +257,108 @@ export default function TicketList({
           <thead>
             {/* HEADERS */}
             <tr>
-              <th style={styles.th}>Ticket No</th>
-              <th style={styles.th}>Title</th>
-              <th style={styles.th}>Description</th>
-              <th style={styles.th}>Status</th>
-              <th style={styles.th}>Priority</th>
-              <th style={styles.th}>Created</th>
-              <th style={styles.th}>User Email</th>
-              <th style={styles.th}>HOD Email</th>
-              <th style={styles.th}>Remark</th>
-              <th style={styles.th}>Attachments</th>
+              <th style={styles.th}>
+                Ticket No
+              </th>
+
+              <th style={styles.th}>
+                Title
+              </th>
+
+              <th
+                style={
+                  styles.descriptionTh
+                }
+              >
+                Description
+              </th>
+
+              <th style={styles.th}>
+                Status
+              </th>
+
+              <th style={styles.th}>
+                Priority
+              </th>
+
+              <th style={styles.th}>
+                Created
+              </th>
+
+              <th style={styles.emailTh}>
+                User Email
+              </th>
+
+              <th
+                style={
+                  styles.hodEmailTh
+                }
+              >
+                HOD Email
+              </th>
+
+              <th
+                style={styles.remarkTh}
+              >
+                Remark
+              </th>
+
+              <th style={styles.th}>
+                Attachments
+              </th>
             </tr>
 
             {/* FILTERS */}
             <tr>
-              {Object.keys(filters).map((key) => (
-                <th
-                  key={key}
-                  style={styles.filterCell}
-                >
-                  <input
-                    style={styles.filterInput}
-                    placeholder="Filter..."
-                    value={(filters as any)[key]}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        [key]: e.target.value,
-                      })
+              {Object.keys(filters).map(
+                (key) => (
+                  <th
+                    key={key}
+                    style={
+                      styles.filterCell
                     }
-                  />
-                </th>
-              ))}
+                  >
+                    <input
+                      style={
+                        styles.filterInput
+                      }
+                      placeholder="Filter..."
+                      value={
+                        (filters as any)[
+                          key
+                        ]
+                      }
+                      onChange={(e) =>
+                        setFilters({
+                          ...filters,
+                          [key]:
+                            e.target.value,
+                        })
+                      }
+                    />
+                  </th>
+                )
+              )}
             </tr>
           </thead>
 
           <tbody>
             {filteredTickets.map((t) => {
-              const color = getStatusColor(t.status);
+              const color =
+                getStatusColor(
+                  t.status
+                );
 
               return (
                 <tr
                   key={t.id}
                   style={styles.row}
                 >
-                  {/* CLICKABLE TICKET NUMBER */}
+                  {/* TICKET NUMBER */}
                   <td
-                    onClick={() => onSelect?.(t)}
+                    onClick={() =>
+                      onSelect?.(t)
+                    }
                     style={{
                       ...styles.td,
                       borderLeft: `4px solid ${color}`,
@@ -229,16 +378,62 @@ export default function TicketList({
                     {t.ticket_no}
                   </td>
 
+                  {/* TITLE */}
                   <td style={styles.td}>
                     {t.title}
                   </td>
 
-                  <td style={styles.td}>
-                    <div style={styles.description}>
+                  {/* DESCRIPTION */}
+                  <td
+                    style={
+                      styles.descriptionTd
+                    }
+                  >
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        setExpandedDescriptions(
+                          (prev) => ({
+                            ...prev,
+                            [t.id]:
+                              !prev[t.id],
+                          })
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (
+                          e.key ===
+                            "Enter" ||
+                          e.key === " "
+                        ) {
+                          e.preventDefault();
+
+                          setExpandedDescriptions(
+                            (prev) => ({
+                              ...prev,
+                              [t.id]:
+                                !prev[
+                                  t.id
+                                ],
+                            })
+                          );
+                        }
+                      }}
+                      style={{
+                        ...styles.description,
+                        ...(expandedDescriptions[
+                          t.id
+                        ]
+                          ? styles.expandedText
+                          : styles.collapsedText),
+                      }}
+                    >
                       {t.description}
                     </div>
                   </td>
 
+                  {/* STATUS */}
                   <td style={styles.td}>
                     <span
                       style={{
@@ -252,10 +447,12 @@ export default function TicketList({
                     </span>
                   </td>
 
+                  {/* PRIORITY */}
                   <td style={styles.td}>
                     {t.priority || "-"}
                   </td>
 
+                  {/* CREATED */}
                   <td style={styles.td}>
                     {t.created_at
                       ? new Date(
@@ -264,43 +461,123 @@ export default function TicketList({
                       : "-"}
                   </td>
 
-                  <td style={styles.td}>
+                  {/* USER EMAIL */}
+                  <td
+                    style={styles.emailTd}
+                  >
                     {t.email}
                   </td>
 
-                  <td style={styles.td}>
-                    {t.hod_email || "-"}
+                  {/* HOD EMAIL */}
+                  <td
+                    style={
+                      styles.hodEmailTd
+                    }
+                  >
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        setExpandedEmails(
+                          (prev) => ({
+                            ...prev,
+                            [t.id]:
+                              !prev[t.id],
+                          })
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (
+                          e.key ===
+                            "Enter" ||
+                          e.key === " "
+                        ) {
+                          e.preventDefault();
+
+                          setExpandedEmails(
+                            (prev) => ({
+                              ...prev,
+                              [t.id]:
+                                !prev[
+                                  t.id
+                                ],
+                            })
+                          );
+                        }
+                      }}
+                      style={{
+                        ...(expandedEmails[
+                          t.id
+                        ]
+                          ? styles.expandedText
+                          : styles.collapsedText),
+                      }}
+                    >
+                      {t.hod_email ||
+                        "-"}
+                    </div>
                   </td>
 
-                  <td style={styles.td}>
-                    {t.ticket_updates?.length
-                      ? t.ticket_updates[
-                          t.ticket_updates.length - 1
-                        ].message
-                      : "-"}
+                  {/* REMARK */}
+                  <td
+                    style={styles.remarkTd}
+                  >
+                    <div
+                      style={
+                        styles.remarkText
+                      }
+                    >
+                      {t.ticket_updates
+                        ?.length
+                        ? t
+                            .ticket_updates[
+                            t
+                              .ticket_updates
+                              .length -
+                              1
+                          ].message
+                        : "-"}
+                    </div>
                   </td>
 
+                  {/* ATTACHMENTS */}
                   <td style={styles.td}>
-                    {Array.isArray(t.attachments) &&
-                    t.attachments.length > 0 ? (
-                      t.attachments.map((file, i) => (
-                        <div key={i}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              downloadAttachment(file);
-                            }}
-                            style={styles.downloadBtn}
-                          >
-                            📎{" "}
-                            {file
-                              .split("/")
-                              .pop()}
-                          </button>
-                        </div>
-                      ))
+                    {Array.isArray(
+                      t.attachments
+                    ) &&
+                    t.attachments
+                      .length > 0 ? (
+                      t.attachments.map(
+                        (file, i) => (
+                          <div key={i}>
+                            <button
+                              onClick={(
+                                e
+                              ) => {
+                                e.stopPropagation();
+
+                                downloadAttachment(
+                                  file
+                                );
+                              }}
+                              style={
+                                styles.downloadBtn
+                              }
+                            >
+                              📎{" "}
+                              {file
+                                .split("/")
+                                .pop()}
+                            </button>
+                          </div>
+                        )
+                      )
                     ) : (
-                      <span style={styles.noFile}>
+                      <span
+                        style={
+                          styles.noFile
+                        }
+                      >
                         No file
                       </span>
                     )}
@@ -311,7 +588,8 @@ export default function TicketList({
           </tbody>
         </table>
 
-        {filteredTickets.length === 0 && (
+        {filteredTickets.length ===
+          0 && (
           <div style={styles.empty}>
             No Tickets Found
           </div>
@@ -328,8 +606,10 @@ const styles: any = {
     overflow: "auto",
     background: "#0f172a",
     borderRadius: "18px",
-    border: "1px solid rgba(255,255,255,0.06)",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+    border:
+      "1px solid rgba(255,255,255,0.06)",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.25)",
     paddingBottom: "0px",
   },
 
@@ -339,7 +619,7 @@ const styles: any = {
 
   table: {
     width: "100%",
-    minWidth: "1700px",
+    minWidth: "1900px",
     borderCollapse: "separate",
     borderSpacing: "0 2px",
     color: "#fff",
@@ -361,13 +641,72 @@ const styles: any = {
       "1px solid rgba(255,255,255,0.08)",
   },
 
+  descriptionTh: {
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
+    background: "#1e293b",
+    color: "#f8fafc",
+    padding: "10px 14px",
+    textAlign: "left",
+    fontWeight: 600,
+    minWidth: "320px",
+    borderBottom:
+      "1px solid rgba(255,255,255,0.08)",
+  },
+
+  emailTh: {
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
+    background: "#1e293b",
+    color: "#f8fafc",
+    padding: "10px 14px",
+    textAlign: "left",
+    fontWeight: 600,
+    minWidth: "220px",
+    borderBottom:
+      "1px solid rgba(255,255,255,0.08)",
+  },
+
+  hodEmailTh: {
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
+    background: "#1e293b",
+    color: "#f8fafc",
+    padding: "10px 14px",
+    textAlign: "left",
+    fontWeight: 600,
+    width: "220px",
+    minWidth: "220px",
+    maxWidth: "220px",
+    borderBottom:
+      "1px solid rgba(255,255,255,0.08)",
+  },
+
+  remarkTh: {
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
+    background: "#1e293b",
+    color: "#f8fafc",
+    padding: "10px 14px",
+    textAlign: "left",
+    fontWeight: 600,
+    minWidth: "260px",
+    borderBottom:
+      "1px solid rgba(255,255,255,0.08)",
+  },
+
   filterCell: {
     position: "sticky",
     top: 54,
     zIndex: 19,
     background: "#0f172a",
     padding: "4px 8px",
-    borderBottom: "4px solid #0f172a",
+    borderBottom:
+      "4px solid #0f172a",
   },
 
   filterInput: {
@@ -382,7 +721,7 @@ const styles: any = {
   },
 
   td: {
-    padding: "6px 14px",
+    padding: "8px 14px",
     color: "#e2e8f0",
     background: "#111827",
     whiteSpace: "nowrap",
@@ -390,6 +729,43 @@ const styles: any = {
       "1px solid rgba(255,255,255,0.04)",
     borderBottom:
       "1px solid rgba(255,255,255,0.04)",
+    verticalAlign: "top",
+  },
+
+  descriptionTd: {
+    padding: "8px 14px",
+    color: "#e2e8f0",
+    background: "#111827",
+    minWidth: "320px",
+    maxWidth: "320px",
+    verticalAlign: "top",
+  },
+
+  emailTd: {
+    padding: "8px 14px",
+    color: "#e2e8f0",
+    background: "#111827",
+    whiteSpace: "nowrap",
+    minWidth: "220px",
+  },
+
+  hodEmailTd: {
+    padding: "8px 14px",
+    color: "#e2e8f0",
+    background: "#111827",
+    width: "220px",
+    minWidth: "220px",
+    maxWidth: "220px",
+    verticalAlign: "top",
+  },
+
+  remarkTd: {
+    padding: "8px 14px",
+    color: "#e2e8f0",
+    background: "#111827",
+    minWidth: "260px",
+    maxWidth: "260px",
+    verticalAlign: "top",
   },
 
   row: {
@@ -397,10 +773,30 @@ const styles: any = {
   },
 
   description: {
-    maxWidth: "200px",
+    minWidth: "300px",
+    maxWidth: "320px",
+  },
+
+  remarkText: {
+    whiteSpace: "normal",
+    wordBreak: "break-word",
+    overflowWrap: "break-word",
+    lineHeight: "1.5",
+  },
+
+  collapsedText: {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    cursor: "pointer",
+  },
+
+  expandedText: {
+    whiteSpace: "normal",
+    wordBreak: "break-word",
+    overflowWrap: "break-word",
+    cursor: "pointer",
+    lineHeight: "1.5",
   },
 
   statusBadge: {
@@ -412,7 +808,8 @@ const styles: any = {
   },
 
   downloadBtn: {
-    background: "rgba(37,99,235,0.12)",
+    background:
+      "rgba(37,99,235,0.12)",
     border:
       "1px solid rgba(37,99,235,0.25)",
     color: "#60a5fa",
@@ -420,6 +817,7 @@ const styles: any = {
     padding: "5px 10px",
     borderRadius: "8px",
     fontSize: "11px",
+    marginBottom: "5px",
   },
 
   noFile: {
@@ -449,6 +847,487 @@ const styles: any = {
     fontSize: "12px",
   },
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// final working code begore go live 
+// import { useMemo, useState } from "react";
+// import ExcelJS from "exceljs";
+
+// type Ticket = {
+//   id: string;
+//   ticket_no: string;
+//   title: string;
+//   description: string;
+//   status: string;
+//   priority: string | null;
+//   created_at: string | null;
+//   email: string;
+//   hod_email: string | null;
+//   attachments: string[] | null;
+//   ticket_updates?: {
+//     message: string;
+//     created_at: string;
+//   }[];
+// };
+
+// type Props = {
+//   tickets: Ticket[];
+//   onSelect?: (ticket: Ticket) => void;
+// };
+
+// export default function TicketList({
+//   tickets,
+//   onSelect,
+// }: Props) {
+//   const [filters, setFilters] = useState({
+//     ticket_no: "",
+//     title: "",
+//     description: "",
+//     status: "",
+//     priority: "",
+//     created_at: "",
+//     email: "",
+//     hod_email: "",
+//     remark: "",
+//   });
+
+//   const getStatusColor = (status: string) => {
+//     const s = status?.toLowerCase().replace("_", " ").trim();
+
+//     if (s === "open") return "#ef4444";
+//     if (s === "in progress") return "#f59e0b";
+//     if (s === "resolved") return "#10b981";
+//     if (s === "closed") return "#64748b";
+
+//     return "#64748b";
+//   };
+
+//   const downloadAttachment = (fileUrl: string) => {
+//     if (!fileUrl) return;
+
+//     if (fileUrl.startsWith("http")) {
+//       window.open(fileUrl, "_blank");
+//     } else {
+//       const fullUrl = `https://hevvbfybswocqmdxwpxa.supabase.co/storage/v1/object/public/tickets/${fileUrl}`;
+//       window.open(fullUrl, "_blank");
+//     }
+//   };
+
+//   const filteredTickets = useMemo(() => {
+//     return tickets.filter((t) => {
+//       const lastRemark =
+//         t.ticket_updates && t.ticket_updates.length > 0
+//           ? t.ticket_updates[t.ticket_updates.length - 1].message
+//           : "";
+
+//       return (
+//         (t.ticket_no || "")
+//           .toLowerCase()
+//           .includes(filters.ticket_no.toLowerCase()) &&
+//         (t.title || "")
+//           .toLowerCase()
+//           .includes(filters.title.toLowerCase()) &&
+//         (t.description || "")
+//           .toLowerCase()
+//           .includes(filters.description.toLowerCase()) &&
+//         (t.status || "")
+//           .toLowerCase()
+//           .includes(filters.status.toLowerCase()) &&
+//         (t.priority || "")
+//           .toLowerCase()
+//           .includes(filters.priority.toLowerCase()) &&
+//         (t.created_at
+//           ? new Date(t.created_at)
+//               .toLocaleString()
+//               .toLowerCase()
+//           : ""
+//         ).includes(filters.created_at.toLowerCase()) &&
+//         (t.email || "")
+//           .toLowerCase()
+//           .includes(filters.email.toLowerCase()) &&
+//         (t.hod_email || "")
+//           .toLowerCase()
+//           .includes(filters.hod_email.toLowerCase()) &&
+//         (lastRemark || "")
+//           .toLowerCase()
+//           .includes(filters.remark.toLowerCase())
+//       );
+//     });
+//   }, [tickets, filters]);
+
+//   const exportToExcel = async () => {
+//     const workbook = new ExcelJS.Workbook();
+//     const worksheet = workbook.addWorksheet("Tickets");
+
+//     worksheet.columns = [
+//       { header: "Ticket No", key: "ticket_no", width: 15 },
+//       { header: "Title", key: "title", width: 28 },
+//       { header: "Description", key: "description", width: 40 },
+//       { header: "Priority", key: "priority", width: 15 },
+//       { header: "Status", key: "status", width: 15 },
+//       { header: "User Email", key: "email", width: 30 },
+//       { header: "HOD Email", key: "hod_email", width: 30 },
+//       { header: "Created Date", key: "created_at", width: 22 },
+//     ];
+
+//     filteredTickets.forEach((t) => {
+//       worksheet.addRow({
+//         ticket_no: t.ticket_no,
+//         title: t.title,
+//         description: t.description,
+//         priority: t.priority,
+//         status: t.status,
+//         email: t.email,
+//         hod_email: t.hod_email,
+//         created_at: new Date(
+//           t.created_at || ""
+//         ).toLocaleString(),
+//       });
+//     });
+
+//     const buffer = await workbook.xlsx.writeBuffer();
+
+//     const blob = new Blob([buffer]);
+
+//     const url = window.URL.createObjectURL(blob);
+
+//     const a = document.createElement("a");
+//     a.href = url;
+//     a.download = "tickets.xlsx";
+//     a.click();
+//   };
+
+//   return (
+//     <div style={styles.wrapper}>
+//       {/* EXPORT BUTTON */}
+//       <div style={styles.topActions}>
+//         <button
+//           onClick={exportToExcel}
+//           style={styles.exportBtn}
+//         >
+//           Export Excel
+//         </button>
+//       </div>
+
+//       {/* TABLE */}
+//       <div style={styles.tableWrapper}>
+//         <table style={styles.table}>
+//           <thead>
+//             {/* HEADERS */}
+//             <tr>
+//               <th style={styles.th}>Ticket No</th>
+//               <th style={styles.th}>Title</th>
+//               <th style={styles.th}>Description</th>
+//               <th style={styles.th}>Status</th>
+//               <th style={styles.th}>Priority</th>
+//               <th style={styles.th}>Created</th>
+//               <th style={styles.th}>User Email</th>
+//               <th style={styles.th}>HOD Email</th>
+//               <th style={styles.th}>Remark</th>
+//               <th style={styles.th}>Attachments</th>
+//             </tr>
+
+//             {/* FILTERS */}
+//             <tr>
+//               {Object.keys(filters).map((key) => (
+//                 <th
+//                   key={key}
+//                   style={styles.filterCell}
+//                 >
+//                   <input
+//                     style={styles.filterInput}
+//                     placeholder="Filter..."
+//                     value={(filters as any)[key]}
+//                     onChange={(e) =>
+//                       setFilters({
+//                         ...filters,
+//                         [key]: e.target.value,
+//                       })
+//                     }
+//                   />
+//                 </th>
+//               ))}
+//             </tr>
+//           </thead>
+
+//           <tbody>
+//             {filteredTickets.map((t) => {
+//               const color = getStatusColor(t.status);
+
+//               return (
+//                 <tr
+//                   key={t.id}
+//                   style={styles.row}
+//                 >
+//                   {/* CLICKABLE TICKET NUMBER */}
+//                   <td
+//                     onClick={() => onSelect?.(t)}
+//                     style={{
+//                       ...styles.td,
+//                       borderLeft: `4px solid ${color}`,
+//                       cursor: "pointer",
+//                       color: "#38bdf8",
+//                       fontWeight: 700,
+//                     }}
+//                     onMouseEnter={(e) =>
+//                       (e.currentTarget.style.color =
+//                         "#0ea5e9")
+//                     }
+//                     onMouseLeave={(e) =>
+//                       (e.currentTarget.style.color =
+//                         "#38bdf8")
+//                     }
+//                   >
+//                     {t.ticket_no}
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     {t.title}
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     <div style={styles.description}>
+//                       {t.description}
+//                     </div>
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     <span
+//                       style={{
+//                         ...styles.statusBadge,
+//                         background: `${color}20`,
+//                         color: color,
+//                         border: `1px solid ${color}`,
+//                       }}
+//                     >
+//                       {t.status}
+//                     </span>
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     {t.priority || "-"}
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     {t.created_at
+//                       ? new Date(
+//                           t.created_at
+//                         ).toLocaleString()
+//                       : "-"}
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     {t.email}
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     {t.hod_email || "-"}
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     {t.ticket_updates?.length
+//                       ? t.ticket_updates[
+//                           t.ticket_updates.length - 1
+//                         ].message
+//                       : "-"}
+//                   </td>
+
+//                   <td style={styles.td}>
+//                     {Array.isArray(t.attachments) &&
+//                     t.attachments.length > 0 ? (
+//                       t.attachments.map((file, i) => (
+//                         <div key={i}>
+//                           <button
+//                             onClick={(e) => {
+//                               e.stopPropagation();
+//                               downloadAttachment(file);
+//                             }}
+//                             style={styles.downloadBtn}
+//                           >
+//                             📎{" "}
+//                             {file
+//                               .split("/")
+//                               .pop()}
+//                           </button>
+//                         </div>
+//                       ))
+//                     ) : (
+//                       <span style={styles.noFile}>
+//                         No file
+//                       </span>
+//                     )}
+//                   </td>
+//                 </tr>
+//               );
+//             })}
+//           </tbody>
+//         </table>
+
+//         {filteredTickets.length === 0 && (
+//           <div style={styles.empty}>
+//             No Tickets Found
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
+// const styles: any = {
+//   wrapper: {
+//     marginTop: "6px",
+//     flex: 1,
+//     overflow: "auto",
+//     background: "#0f172a",
+//     borderRadius: "18px",
+//     border: "1px solid rgba(255,255,255,0.06)",
+//     boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+//     paddingBottom: "0px",
+//   },
+
+//   tableWrapper: {
+//     overflow: "auto",
+//   },
+
+//   table: {
+//     width: "100%",
+//     minWidth: "1700px",
+//     borderCollapse: "separate",
+//     borderSpacing: "0 2px",
+//     color: "#fff",
+//     fontSize: "12px",
+//     padding: "0 10px",
+//   },
+
+//   th: {
+//     position: "sticky",
+//     top: 0,
+//     zIndex: 20,
+//     background: "#1e293b",
+//     color: "#f8fafc",
+//     padding: "10px 14px",
+//     textAlign: "left",
+//     fontWeight: 600,
+//     whiteSpace: "nowrap",
+//     borderBottom:
+//       "1px solid rgba(255,255,255,0.08)",
+//   },
+
+//   filterCell: {
+//     position: "sticky",
+//     top: 54,
+//     zIndex: 19,
+//     background: "#0f172a",
+//     padding: "4px 8px",
+//     borderBottom: "4px solid #0f172a",
+//   },
+
+//   filterInput: {
+//     width: "100%",
+//     padding: "6px 8px",
+//     borderRadius: "8px",
+//     border: "1px solid #334155",
+//     background: "#111827",
+//     color: "#fff",
+//     outline: "none",
+//     fontSize: "12px",
+//   },
+
+//   td: {
+//     padding: "6px 14px",
+//     color: "#e2e8f0",
+//     background: "#111827",
+//     whiteSpace: "nowrap",
+//     borderTop:
+//       "1px solid rgba(255,255,255,0.04)",
+//     borderBottom:
+//       "1px solid rgba(255,255,255,0.04)",
+//   },
+
+//   row: {
+//     transition: "0.2s",
+//   },
+
+//   description: {
+//     maxWidth: "200px",
+//     overflow: "hidden",
+//     textOverflow: "ellipsis",
+//     whiteSpace: "nowrap",
+//   },
+
+//   statusBadge: {
+//     padding: "5px 12px",
+//     borderRadius: "30px",
+//     fontSize: "11px",
+//     fontWeight: 600,
+//     display: "inline-block",
+//   },
+
+//   downloadBtn: {
+//     background: "rgba(37,99,235,0.12)",
+//     border:
+//       "1px solid rgba(37,99,235,0.25)",
+//     color: "#60a5fa",
+//     cursor: "pointer",
+//     padding: "5px 10px",
+//     borderRadius: "8px",
+//     fontSize: "11px",
+//   },
+
+//   noFile: {
+//     color: "#94a3b8",
+//     fontSize: "11px",
+//   },
+
+//   empty: {
+//     textAlign: "center",
+//     padding: "40px",
+//     color: "#94a3b8",
+//     fontSize: "14px",
+//   },
+
+//   topActions: {
+//     padding: "10px",
+//   },
+
+//   exportBtn: {
+//     padding: "7px 12px",
+//     background: "#2563eb",
+//     color: "#fff",
+//     border: "none",
+//     borderRadius: "10px",
+//     cursor: "pointer",
+//     fontWeight: 600,
+//     fontSize: "12px",
+//   },
+// };
 
 
 
