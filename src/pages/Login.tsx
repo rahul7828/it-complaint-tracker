@@ -118,11 +118,11 @@ export default function Login() {
         {/* TITLE */}
         <div style={styles.headingWrap}>
           <h1 style={styles.heading}>
-            IT Complaint Tracker
+            IT Helpdesk Portal
           </h1>
 
           <p style={styles.subHeading}>
-            Eagle Seeds IT Helpdesk Portal
+            Eagle Seeds and Biotech Pvt. Ltd.
           </p>
         </div>
 
