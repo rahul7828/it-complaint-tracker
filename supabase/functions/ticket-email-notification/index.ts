@@ -270,6 +270,11 @@ Deno.serve(async (req) => {
 
     /* ---------------- BREVO API ---------------- */
 
+      console.log(
+  "BREVO KEY EXISTS:",
+  !!Deno.env.get("BREVO_API_KEY")
+);
+
     const response = await fetch(
       "https://api.brevo.com/v3/smtp/email",
       {
@@ -289,29 +294,70 @@ Deno.serve(async (req) => {
       }
     );
 
+    // const data = await response.json();
+
+    // console.log(
+    //   "BREVO RESPONSE:",
+    //   data
+    // );
+
+    //   if (!response.ok) {
+    //     return new Response(
+    //       JSON.stringify({
+    //         success: false,
+    //         error: data,
+    //       }),
+    //       {
+    //       status: response.status,
+    //       headers: {
+    //         ...corsHeaders,
+    //         "Content-Type":
+    //           "application/json",
+    //       },
+    //     }
+    //   );
+    // }
+
     const data = await response.json();
 
-    console.log(
-      "BREVO RESPONSE:",
-      data
-    );
+console.log(
+  "BREVO RESPONSE:",
+  data
+);
 
-    if (!response.ok) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: data,
-        }),
-        {
-          status: response.status,
-          headers: {
-            ...corsHeaders,
-            "Content-Type":
-              "application/json",
-          },
-        }
-      );
+if (!response.ok) {
+  console.error(
+    "BREVO ERROR STATUS:",
+    response.status
+  );
+
+  console.error(
+    "BREVO ERROR BODY:",
+    data
+  );
+
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: data,
+    }),
+    {
+      status: response.status,
+      headers: {
+        ...corsHeaders,
+        "Content-Type":
+          "application/json",
+      },
     }
+  );
+}
+
+
+
+
+
+
+
 
     return new Response(
       JSON.stringify({
